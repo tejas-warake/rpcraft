@@ -1,5 +1,5 @@
 
-import { useAppStore, type StreamMessage } from '../stores/useAppStore';
+import { useAppStore } from '../stores/useAppStore';
 import { ActivityIcon, XIcon } from './Icons';
 
 // Stream panel for viewing real-time message flow

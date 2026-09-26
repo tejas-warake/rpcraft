@@ -19,8 +19,6 @@ export default function App() {
     openTab,
     closeTab,
     addStreamMessage,
-    streamPanelOpen,
-    toggleStreamPanel,
   } = useAppStore();
 
   // Initialize app data on mount
