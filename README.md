@@ -25,3 +25,13 @@ npm run tauri dev
 4. **Prepare Payload:** Enter your JSON payload in the **Body** text editor.
 5. **Send Request:** Click the **Send** button. This will natively launch your local process in the background.
 6. **View Streams:** Open the **Stream Panel** (bottom right) to monitor interleaved requests, responses, and server-sent asynchronous notifications in real time.
+
+### Packaging & Distribution
+
+To build the optimized, standalone executable for your current operating system, run:
+
+```bash
+npm run tauri build
+```
+
+**Note on Cross-Compilation:** Tauri natively builds for the OS you are currently running it on (e.g., running the build command on Linux creates `.deb` and `AppImage` files). To easily package for Windows (`.exe` or `.msi`) and macOS (`.dmg`), it is highly recommended to use [Tauri GitHub Actions](https://v2.tauri.app/distribute/pipelines/) to automate cross-platform releases.
