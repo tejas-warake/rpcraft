@@ -95,6 +95,7 @@ export interface TabState {
   body: string;
   headers: KeyValue[];
   isDirty: boolean;
+  processId: string | null;
 }
 
 // Protocol display configuration

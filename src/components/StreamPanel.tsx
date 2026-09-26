@@ -1,22 +1,11 @@
 
-import { useAppStore } from '../stores/useAppStore';
+import { useAppStore, type StreamMessage } from '../stores/useAppStore';
 import { ActivityIcon, XIcon } from './Icons';
-
-interface StreamMessage {
-  id: string;
-  direction: 'request' | 'response' | 'notification' | 'error';
-  requestId: string | null;
-  timestamp: number;
-  content: string;
-}
 
 // Stream panel for viewing real-time message flow
 // In Phase 1, this serves as a demo panel — full streaming comes with the JSON-RPC adapter
 export default function StreamPanel() {
-  const { streamPanelOpen, toggleStreamPanel } = useAppStore();
-
-  // Demo messages for UI — will be replaced with real stream data
-  const messages: StreamMessage[] = [];
+  const { streamPanelOpen, toggleStreamPanel, streamMessages: messages } = useAppStore();
 
   if (!streamPanelOpen) return null;
 
@@ -64,7 +53,7 @@ export default function StreamPanel() {
           messages.map((msg) => (
             <div
               key={msg.id}
-              className={`stream-msg ${msg.requestId ? '' : ''}`}
+              className={`stream-msg`}
             >
               <span className={`stream-msg__dir ${dirClass[msg.direction]}`}>
                 {dirSymbol[msg.direction]}
@@ -76,9 +65,6 @@ export default function StreamPanel() {
                   second: '2-digit',
                 })}
               </span>
-              {msg.requestId && (
-                <span className="stream-msg__id">#{msg.requestId}</span>
-              )}
               <span className="stream-msg__content">{msg.content}</span>
             </div>
           ))

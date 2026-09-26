@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import { useAppStore } from '../stores/useAppStore';
 import type { TabState, Protocol, Transport, KeyValue, HistoryEntry } from '../types';
 import { PROTOCOL_CONFIG, TRANSPORT_CONFIG } from '../types';
@@ -69,40 +70,87 @@ export default function RequestPanel({ tab }: RequestPanelProps) {
         requestBody = { jsonrpc: '2.0', id: 1, method, params: {} };
       }
 
-      // For Phase 1, we do JSON-RPC over a simple HTTP POST or echo for demo
-      // In a full implementation, this would go through the Rust backend
-      const res = await fetch(`http://${target}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...Object.fromEntries(
-            tab.headers
-              .filter((h) => h.enabled && h.key)
-              .map((h) => [
-                interpolateVars(h.key, envVars),
-                interpolateVars(h.value, envVars),
-              ])
-          ),
-        },
-        body: JSON.stringify(requestBody),
-      });
+      let formattedBody: string | null = null;
+      let finalStatus: string = '';
+      let finalLatencyMs: number = 0;
 
-      const latencyMs = performance.now() - startTime;
-      const responseText = await res.text();
+      if (tab.transport === 'stdio') {
+        let processId = tab.processId;
+        
+        // Start process if not already running for this tab
+        if (!processId) {
+          processId = await invoke('start_process', { command: target });
+          handleUpdateField('processId', processId);
+        }
 
-      let formattedBody = responseText;
-      try {
-        formattedBody = JSON.stringify(JSON.parse(responseText), null, 2);
-      } catch {
-        // keep raw text
+        // Add a request message to stream
+        useAppStore.getState().addStreamMessage({
+          id: crypto.randomUUID(),
+          processId: processId as string,
+          direction: 'request',
+          timestamp: Date.now(),
+          content: JSON.stringify(requestBody, null, 2),
+        });
+
+        // Send message to the process
+        let payloadString = JSON.stringify(requestBody);
+        if (tab.protocol === 'lsp') {
+          // Calculate length using UTF-8 byte length
+          const byteLength = new Blob([payloadString]).size;
+          payloadString = `Content-Length: ${byteLength}\r\n\r\n${payloadString}`;
+        } else {
+          payloadString = payloadString + '\n';
+        }
+
+        await invoke('send_process_message', { 
+          processId, 
+          message: payloadString
+        });
+
+        finalLatencyMs = performance.now() - startTime;
+        finalStatus = 'Process Running';
+        formattedBody = 'Message sent via stdio.\nCheck the Stream panel for server responses and logs.';
+        
+        setResponse({
+          body: formattedBody,
+          status: finalStatus,
+          latencyMs: finalLatencyMs,
+        });
+      } else {
+        // HTTP Transport (Phase 1 mock)
+        const res = await fetch(`http://${target}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...Object.fromEntries(
+              tab.headers
+                .filter((h) => h.enabled && h.key)
+                .map((h) => [
+                  interpolateVars(h.key, envVars),
+                  interpolateVars(h.value, envVars),
+                ])
+            ),
+          },
+          body: JSON.stringify(requestBody),
+        });
+
+        finalLatencyMs = performance.now() - startTime;
+        const responseText = await res.text();
+
+        formattedBody = responseText;
+        try {
+          formattedBody = JSON.stringify(JSON.parse(responseText), null, 2);
+        } catch {
+          // keep raw text
+        }
+
+        finalStatus = `${res.status} ${res.statusText}`;
+        setResponse({
+          body: formattedBody,
+          status: finalStatus,
+          latencyMs: finalLatencyMs,
+        });
       }
-
-      const result = {
-        body: formattedBody,
-        status: `${res.status} ${res.statusText}`,
-        latencyMs,
-      };
-      setResponse(result);
 
       // Add to history
       if (workspace) {
@@ -117,8 +165,8 @@ export default function RequestPanel({ tab }: RequestPanelProps) {
           requestHeaders: tab.headers,
           responseBody: formattedBody,
           responseHeaders: null,
-          status: result.status,
-          latencyMs,
+          status: finalStatus,
+          latencyMs: finalLatencyMs,
           error: null,
           createdAt: new Date().toISOString(),
         };
@@ -197,7 +245,7 @@ export default function RequestPanel({ tab }: RequestPanelProps) {
 
           <input
             className="request-panel__target-input"
-            placeholder="localhost:8545"
+            placeholder={tab.transport === 'stdio' ? "e.g. node server.js" : "localhost:8545"}
             value={tab.target}
             onChange={(e) => handleUpdateField('target', e.target.value)}
             onKeyDown={(e) => {

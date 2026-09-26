@@ -1,4 +1,5 @@
 import { useEffect, useCallback } from 'react';
+import { listen } from '@tauri-apps/api/event';
 import { useAppStore } from './stores/useAppStore';
 import Sidebar from './components/Sidebar';
 import TabBar from './components/TabBar';
@@ -17,6 +18,9 @@ export default function App() {
     activeTabId,
     openTab,
     closeTab,
+    addStreamMessage,
+    streamPanelOpen,
+    toggleStreamPanel,
   } = useAppStore();
 
   // Initialize app data on mount
@@ -26,6 +30,26 @@ export default function App() {
       await Promise.all([loadCollections(), loadEnvironments(), loadHistory()]);
     };
     init();
+
+    const unlisten = listen('process_event', (event: any) => {
+      const payload = event.payload;
+      
+      addStreamMessage({
+        id: crypto.randomUUID(),
+        processId: payload.process_id,
+        direction: payload.event_type === 'stderr' ? 'error' : 'response',
+        timestamp: Date.now(),
+        content: payload.data,
+      });
+
+      if (!useAppStore.getState().streamPanelOpen) {
+        useAppStore.getState().toggleStreamPanel();
+      }
+    });
+
+    return () => {
+      unlisten.then(f => f());
+    };
   }, []);
 
   // Keyboard shortcuts

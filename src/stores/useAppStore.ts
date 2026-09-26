@@ -10,6 +10,14 @@ import type {
 } from '../types';
 import * as api from '../lib/tauri-bridge';
 
+export interface StreamMessage {
+  id: string;
+  processId: string;
+  direction: 'request' | 'response' | 'notification' | 'error';
+  timestamp: number;
+  content: string;
+}
+
 interface AppStore {
   // ── Workspace ──
   workspace: Workspace | null;
@@ -54,6 +62,9 @@ interface AppStore {
   // ── UI ──
   streamPanelOpen: boolean;
   toggleStreamPanel: () => void;
+  streamMessages: StreamMessage[];
+  addStreamMessage: (msg: StreamMessage) => void;
+  clearStreamMessages: () => void;
 }
 
 function generateId(): string {
@@ -72,6 +83,7 @@ function createDefaultTab(overrides?: Partial<TabState>): TabState {
     body: '{\n  "jsonrpc": "2.0",\n  "id": 1,\n  "method": "",\n  "params": {}\n}',
     headers: [],
     isDirty: false,
+    processId: null,
     ...overrides,
   };
 }
@@ -232,4 +244,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   streamPanelOpen: false,
   toggleStreamPanel: () =>
     set((state) => ({ streamPanelOpen: !state.streamPanelOpen })),
+  streamMessages: [],
+  addStreamMessage: (msg) => set((state) => ({ streamMessages: [...state.streamMessages, msg] })),
+  clearStreamMessages: () => set({ streamMessages: [] }),
 }));

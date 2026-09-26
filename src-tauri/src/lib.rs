@@ -1,5 +1,7 @@
+use tauri::Manager;
 mod commands;
 mod db;
+pub mod process;
 pub mod types;
 
 use db::Database;
@@ -26,6 +28,10 @@ pub fn run() {
                 .expect("failed to open database");
 
             app.manage(database);
+            
+            let app_handle = app.handle().clone();
+            app.manage(process::manager::ProcessManager::new(app_handle));
+            
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -49,6 +55,9 @@ pub fn run() {
             commands::history::get_history,
             commands::history::add_history_entry,
             commands::history::clear_history,
+            // Process commands
+            commands::process::start_process,
+            commands::process::send_process_message,
         ])
         .run(tauri::generate_context!())
         .expect("error while running RPCraft");
