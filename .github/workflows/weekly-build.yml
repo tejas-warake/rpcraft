@@ -10,54 +10,63 @@ permissions:
   contents: write
 
 jobs:
-  build-tauri:
+  build-wails:
     strategy:
       fail-fast: false
       matrix:
         include:
-          - platform: "ubuntu-22.04" # Linux build
-            args: ""
+          - platform: "ubuntu-24.04" # Linux build
+            os_name: "linux"
           - platform: "windows-latest" # Windows build
-            args: ""
+            os_name: "windows"
 
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23' # or your preferred Go version
+
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '18' # Pinned back to 18 since Vite 5 was downgraded for Wails compatibility
           cache: 'npm' # Speeds up frontend dependency resolution
 
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-
-      # Speeds up Rust compilation time tremendously for weekly runs
-      - name: Rust Cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: "./src-tauri -> target"
-
-      # Updated dependencies specifically required by Tauri v2 on Ubuntu
       - name: Install Linux dependencies
-        if: matrix.platform == 'ubuntu-22.04'
+        if: matrix.os_name == 'linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libjavascriptcoregtk-4.1-dev soup-backend
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
 
-      - name: Install frontend dependencies
-        run: npm install
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
-      # Upgraded to v2 to natively support Tauri 2.x structures
-      - name: Build Tauri app
-        uses: tauri-apps/tauri-action@v1
+      - name: Build Wails app (Linux)
+        if: matrix.os_name == 'linux'
+        run: wails build -tags webkit2_41
+
+      - name: Build Wails app (Windows Standalone .exe)
+        if: matrix.os_name == 'windows'
+        run: wails build
+
+      - name: Build Wails app (Windows Installer)
+        if: matrix.os_name == 'windows'
+        run: |
+          choco install nsis
+          wails build -nsis
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: weekly-build-v${{ github.run_number }}
+          name: "RPCraft v${{ github.run_number }} (Weekly Build)"
+          body: "Automated weekly snapshot build."
+          draft: true
+          prerelease: true # Best practice to mark automated weekly snapshots as prerelease
+          files: |
+            build/bin/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: weekly-build-v__VERSION__ 
-          releaseName: "RPCraft v__VERSION__ (Weekly Build)"
-          releaseBody: "Automated weekly snapshot build."
-          releaseDraft: true
-          prerelease: true # Best practice to mark automated weekly snapshots as prerelease
-          args: ${{ matrix.args }}

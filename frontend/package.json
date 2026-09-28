@@ -1,0 +1,24 @@
+{
+  "name": "rpcraft",
+  "private": true,
+  "version": "0.1.0",
+  "description": "A universal, protocol-aware API client for Remote Procedure Calls",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.7.0",
+    "typescript": "~6.0.3",
+    "vite": "^5.4.21"
+  }
+}
