@@ -2,17 +2,35 @@
 
 > A universal, protocol-aware API client for Remote Procedure Calls
 
-RPCraft is a dedicated developer tool designed from the ground up to test, debug, and organize Remote Procedure Calls (RPC).
+RPCraft is a dedicated developer tool designed from the ground up to test, debug, and organize Remote Procedure Calls (RPC) using a fast Go backend and a responsive React frontend.
 
 ## Getting Started
 
+### Prerequisites
+
+You need the following installed:
+- [Go](https://go.dev/) (v1.20+)
+- [Node.js](https://nodejs.org/) (v18+)
+- [Wails CLI](https://wails.io/docs/gettingstarted/installation) (`go install github.com/wailsapp/wails/v2/cmd/wails@latest`)
+
+On Ubuntu/Debian, you will also need the required webview development libraries:
+```bash
+sudo apt install libgtk-3-dev libwebkit2gtk-4.1-dev
+```
+
 ### Launching Development
 
-To start the app in development mode, ensure you have Node.js and Rust installed, then run:
+To start the app in development mode with hot-reloading for the frontend:
 
 ```bash
-npm install
-npm run tauri dev
+# Add Wails to your path if you haven't
+export PATH=$PATH:$(go env GOPATH)/bin
+
+# If using Ubuntu 24.04 (WebKit2GTK 4.1):
+wails dev -tags webkit2_41
+
+# Otherwise:
+wails dev
 ```
 
 ### How to Use (Testing Local `stdio` Servers)
@@ -31,7 +49,7 @@ npm run tauri dev
 To build the optimized, standalone executable for your current operating system, run:
 
 ```bash
-npm run tauri build
+wails build -tags webkit2_41
 ```
 
-**Note on Cross-Compilation:** Tauri natively builds for the OS you are currently running it on (e.g., running the build command on Linux creates `.deb` and `AppImage` files). To easily package for Windows (`.exe` or `.msi`) and macOS (`.dmg`), it is highly recommended to use [Tauri GitHub Actions](https://v2.tauri.app/distribute/pipelines/) to automate cross-platform releases.
+**Note on Cross-Compilation:** Wails builds binaries for your target OS. You can cross-compile for Windows or MacOS by specifying the platform flag: `wails build -platform windows/amd64` (may require additional CGO cross-compilation toolchains depending on your host OS).

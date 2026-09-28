@@ -566,6 +566,12 @@
   min-width: 90px;
 }
 
+.request-panel__protocol-select option,
+.request-panel__transport-select option {
+  background: var(--surface-input);
+  color: var(--text-primary);
+}
+
 .request-panel__target-input {
   flex: 1;
   font-family: var(--font-mono);
