@@ -5,6 +5,10 @@ on:
     - cron: '0 0 * * 0' # Runs every Sunday at midnight
   workflow_dispatch: # Allows you to run it manually from the Actions tab
 
+# Required permissions for creating draft releases
+permissions:
+  contents: write
+
 jobs:
   build-wails:
     strategy:
@@ -28,7 +32,8 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '18' # Pinned back to 18 since Vite 5 was downgraded for Wails compatibility
+          cache: 'npm' # Speeds up frontend dependency resolution
 
       - name: Install Linux dependencies
         if: matrix.os_name == 'linux'
@@ -56,11 +61,11 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: weekly-${{ github.run_number }}
-          name: "RPCraft Weekly Build #${{ github.run_number }}"
-          body: "Automated weekly build for Wails."
+          tag_name: weekly-build-v${{ github.run_number }}
+          name: "RPCraft v${{ github.run_number }} (Weekly Build)"
+          body: "Automated weekly snapshot build."
           draft: true
-          prerelease: false
+          prerelease: true # Best practice to mark automated weekly snapshots as prerelease
           files: |
             build/bin/*
         env:
