@@ -49,11 +49,7 @@ jobs:
         if: matrix.os_name == 'linux'
         run: wails build -tags webkit2_41
 
-      - name: Build Wails app (Windows Standalone .exe)
-        if: matrix.os_name == 'windows'
-        run: wails build
-
-      - name: Build Wails app (Windows Installer)
+      - name: Build Wails app (Windows)
         if: matrix.os_name == 'windows'
         run: |
           choco install nsis
