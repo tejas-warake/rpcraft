@@ -34,6 +34,7 @@ jobs:
         with:
           node-version: '18' # Pinned back to 18 since Vite 5 was downgraded for Wails compatibility
           cache: 'npm' # Speeds up frontend dependency resolution
+          cache-dependency-path: 'frontend/package-lock.json'
 
       - name: Install Linux dependencies
         if: matrix.os_name == 'linux'
